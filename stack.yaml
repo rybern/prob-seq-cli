@@ -1,0 +1,26 @@
+resolver: lts-8.20
+
+packages:
+- '.'
+#- location:
+    #git: https://github.com/rybern/prob-seq.git
+    #commit: HEAD
+  #extra-dep: true
+- '../prob-seq'
+- location:
+    git: https://github.com/rybern/construction-files.git
+    commit: HEAD
+  extra-dep: true
+
+
+extra-deps: [ sparse-lin-alg-0.4.3
+            , vector-0.12.0.0 ]
+
+
+flags: {}
+
+extra-package-dbs: []
+
+nix:
+  enable: true
+  packages: [gcc, ncurses, git]
