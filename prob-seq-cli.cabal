@@ -18,6 +18,11 @@ executable prob-seq
   main-is:             Main.hs
   other-modules:       CLI
                      , ConstructionFiles
+  ghc-options:
+        -O2
+        -threaded
+        -rtsopts
+        -with-rtsopts=-N4
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
                      , prob-seq

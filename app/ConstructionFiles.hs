@@ -7,39 +7,40 @@ import qualified Math.LinearAlgebra.Sparse as M
 import qualified Data.Vector as V
 import System.FilePath.Posix
 import System.Exit
+import System.IO.Error
 
 import BuildConstructor
 
-import Sequence
-import Sequence.IO.TransMatrix
+import Sequence hiding (constructor)
 
 readSeqFile :: FilePath ->
-               IO (Sequence Char)
+               IO (MatSeq String)
 readSeqFile fp =
   case takeExtension fp of
-    ".st" -> readSTFile fp
-    ".stp" -> readSTPFile fp
+    ".st" -> readSTFile fp >>= throwError
+    ".stp" -> readSTPFile fp >>= throwError
     ".stb" -> runBuilderFile fp
+  where throwError (Right r) = return r
+        throwError (Left e) = ioError $ userError e
 
 builderHelpString :: String
 builderHelpString = Prelude.unlines . map unpack $ builderHelpLines spec
 
-printHelp :: IO ()
-printHelp = printBuilderHelp spec
-
-runBuilderFile :: FilePath -> IO (Sequence Char)
+runBuilderFile :: FilePath -> IO (MatSeq String)
 runBuilderFile fp = buildValueFromFileM spec fp >>= \res ->
   case res of
     Left e -> die (show e)
-    Right v -> eitherT (die . show) return v
+    Right v -> eitherT (die . show) (return . buildMatSeq) v
 
-runBuilderLines :: Text -> IO (Sequence Char)
+{-
+runBuilderLines :: Text -> IO (MatSeq Char)
 runBuilderLines txt =
   case buildValueM spec txt of
     Left e -> die (show e)
-    Right v -> eitherT (die . show) return v
+    Right v -> eitherT (die . show) (return . buildMatSeq) v
+-}
 
-spec :: TinyLangSpec IO (Sequence Char)
+spec :: TinyLangSpec IO (ProbSeq String)
 spec = TinyLangSpec
   {
     valName = "SEQUENCE"
@@ -48,15 +49,27 @@ spec = TinyLangSpec
         TinyLangConstructor
         {
           sym = "seq"
-        , constructor = SimpleString (C0 . deterministicSequence . V.fromList . unpack)
+        , constructor = SimpleString (C0 . deterministicSequence . V.fromList . map return . unpack)
         , constructorDescription = [
               "Deterministic sequence"
             ]
         }
       , TinyLangConstructor
         {
+          sym = "collapse"
+        , constructor = SimpleInt (\n -> Composer (C0 . collapse undefined undefined (fromIntegral n)))
+        , constructorDescription = [ "Collapse each sliding window of n states into a single state"]
+        }
+      , TinyLangConstructor
+        {
           sym = "series"
-        , constructor = SimpleListOfValue (C0 . Prelude.foldl1 andThen)
+        , constructor = SimpleListOfValue (C0 . Prelude.foldl1 (\a b -> andThen a b))
+        , constructorDescription = [ "List of sequences done in series"]
+        }
+        , TinyLangConstructor
+        {
+          sym = "series"
+        , constructor = SimpleListOfValue (C0 . Prelude.foldl1 (\a b -> andThen a b))
         , constructorDescription = [ "List of sequences done in series"]
         }
       , TinyLangConstructor
@@ -68,14 +81,14 @@ spec = TinyLangSpec
       , TinyLangConstructor
         {
           sym = "either"
-        , constructor = SimpleFloat (\p -> Composer (\seqA -> Composer (\seqB -> C0 $ eitherOr p seqA seqB)))
+        , constructor = SimpleFloat (\p -> Composer (\seqA -> Composer (\seqB -> C0 $ eitherOr (toRational p) seqA seqB)))
         , constructorDescription = ["Do the first sequence with probability, otherwise do the second sequence"]
         }
       , TinyLangConstructor
         {
           sym = "empty"
         , constructor = C0 emptySequence
-        , constructorDescription = ["Sequence with no states"]
+        , constructorDescription = ["MatSeq with no states"]
         }
       , TinyLangConstructor
         {
@@ -86,7 +99,7 @@ spec = TinyLangSpec
       , TinyLangConstructor
         {
           sym = "possibly"
-        , constructor = SimpleFloat (\p -> Composer (\seq -> C0 $ possibly p seq))
+        , constructor = SimpleFloat (\p -> Composer (C0 . possibly (toRational p)))
         , constructorDescription = ["Do the sequence with probability, otherwise do nothing"]
         }
       , TinyLangConstructor
@@ -100,36 +113,44 @@ spec = TinyLangSpec
           sym = "finite-dist-over"
         , constructor = SimpleListOfFloat (\ps ->
                                              SimpleListOfValue (\seqs ->
-                                                                  C0 $ finiteDistOver (zip seqs ps)))
+                                                                  C0 $ finiteDistOver
+                                                                  (zip
+                                                                    seqs
+                                                                    (map toRational ps))))
         , constructorDescription = ["Do any of a list of sequences, with corresponding probability"]
         }
+      --, TinyLangConstructor
+        --{
+          --sym = "skipdist"
+        --, constructor = SimpleListOfFloat (\ps ->
+                                             --Composer (\seq ->
+                                                         --C0 . Fix $ SkipDist (map toRational ps) seq))
+        --, constructorDescription = ["Each step of the result is the equivalent of some number of steps of the arguments,"
+                                   --, "with the number of steps drawn from the step distribution"]
+        --}
       , TinyLangConstructor
         {
-          sym = "skipdist"
-        , constructor = SimpleListOfFloat (\ps ->
-                                             Composer (\seq ->
-                                                         C0 $ skipDist (M.vecFromAssocList (zip [1..] ps)) seq))
-        , constructorDescription = ["Each step of the result is the equivalent of some number of steps of the arguments,"
-                                   , "with the number of steps drawn from the step distribution"]
+          sym = "repeat"
+        , constructor = SimpleInt (\n -> Composer (C0 . repeatSequence (fromIntegral n)))
+        , constructorDescription = ["Repeat the sequence N times"]
         }
       , TinyLangConstructor
         {
           sym = "uniform-dist-repeat"
-        , constructor = SimpleInt (\n -> Composer (\seq -> C0 $ uniformDistRepeat (fromIntegral n) seq))
+        , constructor = SimpleInt (\n -> Composer (C0 . uniformDistRepeat (fromIntegral n)))
         , constructorDescription = ["Repeat the sequence between 0 and N times, with 1/n+1 chance of each"]
         }
       , TinyLangConstructor
         {
           sym = "finite-dist-repeat"
         , constructor = SimpleListOfFloat (\ps ->
-                                Composer (\seq ->
-                                             C0 $ finiteDistRepeat ps seq))
-        , constructorDescription = ["Repeat the sequence a number of times with corresponding probability"]
+                                Composer (C0 . finiteDistRepeat (map toRational ps)))
+        , constructorDescription = ["Repeat the sequence a number of times with corresponding probability, indexed from 0"]
         }
       , TinyLangConstructor
         {
           sym = "read-file"
-        , constructor = SimpleString (\fp -> Monadic (C0 <$> readSeqFile (unpack fp)))
+        , constructor = SimpleString (\fp -> Monadic (C0 . matrixForm <$> readSeqFile (unpack fp)))
         , constructorDescription = ["Read a .st, .stp, or .stb file as a sequence"]
         }
       ]
@@ -140,7 +161,7 @@ testFile = Text.unlines
   [
     "seqA = deterministic \"abcd\""
   , "seqB = deterministic \"efg\""
-  , "andThen seqA (eitherOr 0.5 emptySequence seqB)"
+  , "andThen seqA (eitherOr 0.5 emptyMatSeq seqB)"
   ]
 
 built = buildValueM spec testFile

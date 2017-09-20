@@ -1,0 +1,4 @@
+first = read-file "ex1.stb"
+next = reverse first
+
+then first next

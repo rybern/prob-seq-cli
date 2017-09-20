@@ -1,0 +1,5 @@
+like = seq "I like to eat "
+fruit = either 0.5 (seq "apples") (seq "bananas")
+punctuation = finite-dist-over [0.3, 0.2, 0.5] [(seq "!"), (seq "?"), (seq ".")]
+
+series [like, fruit, punctuation]

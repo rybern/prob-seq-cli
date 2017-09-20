@@ -2,8 +2,7 @@
 module CLI where
 
 import ConstructionFiles
-import Sequence.IO.TransMatrix
-import Sequence.Sampling
+import Sequence
 
 import Control.Monad
 import System.Exit
@@ -25,26 +24,22 @@ runCLI = execParser opts >>= runOptions
 
 runOptions :: Options -> IO ()
 runOptions (Options {..}) = do
-  when (stOutput == Nothing
-        && stpOutput == Nothing
-        && sampling == Nothing) $
-     die "No output or actions - exiting"
+  when (  stOutput == Nothing
+       && stpOutput == Nothing
+       && sampling == Nothing
+       ) $ die "No output or actions - exiting"
 
   seq <- readSeqFile (inputFile)
 
-  case stOutput of
-    Nothing -> return ()
-    Just fp -> writeSTFile fp seq
+  forM_ stOutput $ \fp -> do
+    writeSTFile seq fp
 
-  case stpOutput of
-    Nothing -> return ()
-    Just fp -> writeSTPFile fp seq
+  forM_ stpOutput $ \fp -> do
+    writeSTPFile seq fp
 
-  case sampling of
-    Nothing -> return ()
-    Just n -> replicateM_ n $ sampleSeq seq >>= print
-
-  return ()
+  forM_ sampling $ \n -> replicateM_ n $ do
+    (states, _) <- randToIO $ sampleSeq vecDist seq
+    print states
 
 maybeOption nilval option settings = (\v -> if v == nilval then Nothing else Just v) <$> option settings
 
