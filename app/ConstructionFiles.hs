@@ -48,10 +48,18 @@ spec = TinyLangSpec
       [
         TinyLangConstructor
         {
+          sym = "state"
+        , constructor = SimpleString (C0 . deterministicSequence . V.singleton . unpack)
+        , constructorDescription = [
+              "Deterministic state with string label"
+            ]
+        }
+      , TinyLangConstructor
+        {
           sym = "seq"
         , constructor = SimpleString (C0 . deterministicSequence . V.fromList . map return . unpack)
         , constructorDescription = [
-              "Deterministic sequence"
+              "Deterministic sequence with char labels"
             ]
         }
       , TinyLangConstructor
