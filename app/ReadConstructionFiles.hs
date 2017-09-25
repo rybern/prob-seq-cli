@@ -3,15 +3,20 @@ module ReadConstructionFiles
   ( readSeqFile
   , builderHelpString
   , runBuilderFile
+  , runBuilderHandle
   ) where
 
 import Data.Text hiding (concat, map, zip)
 import Data.Text as Text (unlines)
+import Data.Text (Text)
+import qualified Data.Text as Text
+import qualified Data.Text.IO as Text
 import qualified Math.LinearAlgebra.Sparse as M
 import qualified Data.Vector as V
 import System.FilePath.Posix
 import System.Exit
 import System.IO.Error
+import System.IO
 
 import BuildConstructor
 
@@ -30,11 +35,14 @@ readSeqFile fp =
 builderHelpString :: String
 builderHelpString = Prelude.unlines . map unpack $ builderHelpLines spec
 
-runBuilderFile :: FilePath -> IO (ProbSeq String)
-runBuilderFile fp = buildValueFromFileM spec fp >>= \res ->
+runBuilderHandle :: Handle -> IO (ProbSeq String)
+runBuilderHandle h = Text.hGetContents h >>= return . buildValueM spec >>= \res ->
   case res of
     Left e -> die (show e)
     Right v -> eitherT (die . show) return v
+
+runBuilderFile :: FilePath -> IO (ProbSeq String)
+runBuilderFile fp = withFile fp ReadMode runBuilderHandle
 
 {-
 runBuilderLines :: Text -> IO (MatSeq Char)
