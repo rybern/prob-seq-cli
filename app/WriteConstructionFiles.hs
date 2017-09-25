@@ -22,10 +22,9 @@ writeSTBFile seq fp = do
         (lines, mats) = runState linesM []
 
 indent :: Vector Text -> Vector Text
-indent ss = V.map ("  " <>) withNew
-  where newHead = '(' `Text.cons` (V.head ss)
-        newLast = (V.last ss) <> ")"
-        withNew = ss V.// [(0, newHead), (V.length ss - 1, newLast)]
+indent = V.map ("  " <>) . updHead . updLast
+  where updHead v = v V.// [(0, '(' `Text.cons` (V.head v))]
+        updLast v = v V.// [(V.length v - 1, V.last v `Text.snoc` ')')]
 
 matrixFilePath :: FilePath -> Int -> FilePath
 matrixFilePath base ix = base ++ ".matrix_"++show ix

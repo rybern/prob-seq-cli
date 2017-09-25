@@ -64,16 +64,10 @@ spec = TinyLangSpec
         , constructor = SimpleInt (\n -> Composer (C0 . collapse undefined undefined (fromIntegral n)))
         , constructorDescription = [ "Collapse each sliding window of n states into a single state"]
         }
-      , TinyLangConstructor
-        {
-          sym = "series"
-        , constructor = SimpleListOfValue (C0 . Prelude.foldl1 (\a b -> andThen a b))
-        , constructorDescription = [ "List of sequences done in series"]
-        }
         , TinyLangConstructor
         {
           sym = "series"
-        , constructor = SimpleListOfValue (C0 . Prelude.foldl1 (\a b -> andThen a b))
+        , constructor = SimpleListOfValue (C0 . series)
         , constructorDescription = [ "List of sequences done in series"]
         }
       , TinyLangConstructor

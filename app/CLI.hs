@@ -45,7 +45,7 @@ runOptions (Options {..}) = do
     (states, _) <- randToIO $ sampleSeq vecDist matSeq
     print states
 
-  forM_ stpOutput $ \fp -> do
+  forM_ stbOutput $ \fp -> do
     mats <- writeSTBFile probSeq fp
     mapM_ (uncurry writeSTPFile) mats
 
@@ -82,7 +82,7 @@ cliParser = Options
               <> value 0
               <> help "Samples from the input sequence N_SAMPLES number of times. Prints each sample in a new line to stdout.")
             <*> maybeOption "" strOption
-            ( long "ast-output"
-              <> metavar "AST_FILE"
+            ( long "stb-output"
+              <> metavar "STB_FILE"
               <> value ""
               <> help "Output file containing a simplified, standardized form of the input AST. If the input was a matrix, the matrix is wrapped in a \"matrix\" constructor.")
