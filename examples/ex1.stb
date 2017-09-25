@@ -1,1 +1,1 @@
-seq "abcd"
+series [(state "a"), (state "b"), (state "c"), (state "d")]

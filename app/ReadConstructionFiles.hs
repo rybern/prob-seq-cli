@@ -1,5 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
-module ConstructionFiles where
+module ReadConstructionFiles
+  ( readSeqFile
+  , builderHelpString
+  , runBuilderFile
+  ) where
 
 import Data.Text hiding (concat, map, zip)
 import Data.Text as Text (unlines)
@@ -14,11 +18,11 @@ import BuildConstructor
 import Sequence hiding (constructor)
 
 readSeqFile :: FilePath ->
-               IO (MatSeq String)
+               IO (ProbSeq String)
 readSeqFile fp =
   case takeExtension fp of
-    ".st" -> readSTFile fp >>= throwError
-    ".stp" -> readSTPFile fp >>= throwError
+    ".st" -> readSTFile fp >>= throwError >>= \m -> return (matrixForm m)
+    ".stp" -> readSTPFile fp >>= throwError >>= \m -> return (matrixForm m)
     ".stb" -> runBuilderFile fp
   where throwError (Right r) = return r
         throwError (Left e) = ioError $ userError e
@@ -26,11 +30,11 @@ readSeqFile fp =
 builderHelpString :: String
 builderHelpString = Prelude.unlines . map unpack $ builderHelpLines spec
 
-runBuilderFile :: FilePath -> IO (MatSeq String)
+runBuilderFile :: FilePath -> IO (ProbSeq String)
 runBuilderFile fp = buildValueFromFileM spec fp >>= \res ->
   case res of
     Left e -> die (show e)
-    Right v -> eitherT (die . show) (return . buildMatSeq) v
+    Right v -> eitherT (die . show) return v
 
 {-
 runBuilderLines :: Text -> IO (MatSeq Char)
@@ -49,17 +53,9 @@ spec = TinyLangSpec
         TinyLangConstructor
         {
           sym = "state"
-        , constructor = SimpleString (C0 . deterministicSequence . V.singleton . unpack)
+        , constructor = SimpleString (C0 . state . unpack)
         , constructorDescription = [
               "Deterministic state with string label"
-            ]
-        }
-      , TinyLangConstructor
-        {
-          sym = "seq"
-        , constructor = SimpleString (C0 . deterministicSequence . V.fromList . map return . unpack)
-        , constructorDescription = [
-              "Deterministic sequence with char labels"
             ]
         }
       , TinyLangConstructor
@@ -158,7 +154,7 @@ spec = TinyLangSpec
       , TinyLangConstructor
         {
           sym = "read-file"
-        , constructor = SimpleString (\fp -> Monadic (C0 . matrixForm <$> readSeqFile (unpack fp)))
+        , constructor = SimpleString (\fp -> Monadic (C0 <$> readSeqFile (unpack fp)))
         , constructorDescription = ["Read a .st, .stp, or .stb file as a sequence"]
         }
       ]

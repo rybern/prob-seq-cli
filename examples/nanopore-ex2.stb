@@ -1,3 +1,0 @@
-geneticSequence = read-file "nanopore-ex1.stb"
-
-either 0.5 geneticSequence (reverse geneticSequence)

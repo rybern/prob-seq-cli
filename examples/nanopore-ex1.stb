@@ -1,9 +1,0 @@
-barcode = seq "~BARCODE~"
-start = seq "~START~"
-snippet = seq "~SNIPPET~"
-end = seq "~END~"
-
-maybeBarcode = possibly 0.5 barcode
-snippets = uniform-dist-repeat 10 snippet
-
-series [maybeBarcode, start, snippets, end]

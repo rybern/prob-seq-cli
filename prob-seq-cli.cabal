@@ -17,7 +17,8 @@ executable prob-seq
   hs-source-dirs:      app
   main-is:             Main.hs
   other-modules:       CLI
-                     , ConstructionFiles
+                     , ReadConstructionFiles
+                     , WriteConstructionFiles
   ghc-options:
         -O2
         -threaded
@@ -35,6 +36,8 @@ executable prob-seq
                      , text
                      , filepath
                      , optparse-applicative
+                     , mtl
+                     , data-fix
 
 source-repository head
   type:     git

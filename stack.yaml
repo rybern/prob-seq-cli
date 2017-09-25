@@ -4,7 +4,7 @@ packages:
 - '.'
 - location:
     git: https://github.com/rybern/prob-seq.git
-    commit: 435eae731b699a2936a33a667d970c3df1179b14
+    commit: b8dbb8dbbdb04ec2a9466c696ed7e298d2a6cd53
   extra-dep: true
 #- '../prob-seq'
 - location:

@@ -1,7 +1,8 @@
 {-# LANGUAGE RecordWildCards #-}
 module CLI where
 
-import ConstructionFiles
+import WriteConstructionFiles
+import ReadConstructionFiles
 import Sequence
 
 import Control.Monad
@@ -14,6 +15,7 @@ data Options = Options {
   , stOutput :: Maybe FilePath
   , stpOutput :: Maybe FilePath
   , sampling :: Maybe Int
+  , stbOutput :: Maybe FilePath
   }
 
 runCLI :: IO ()
@@ -27,19 +29,25 @@ runOptions (Options {..}) = do
   when (  stOutput == Nothing
        && stpOutput == Nothing
        && sampling == Nothing
+       && stbOutput == Nothing
        ) $ die "No output or actions - exiting"
 
-  seq <- readSeqFile (inputFile)
+  probSeq <- readSeqFile (inputFile)
+  let matSeq = buildMatSeq probSeq
 
   forM_ stOutput $ \fp -> do
-    writeSTFile seq fp
+    writeSTFile matSeq fp
 
   forM_ stpOutput $ \fp -> do
-    writeSTPFile seq fp
+    writeSTPFile matSeq fp
 
   forM_ sampling $ \n -> replicateM_ n $ do
-    (states, _) <- randToIO $ sampleSeq vecDist seq
+    (states, _) <- randToIO $ sampleSeq vecDist matSeq
     print states
+
+  forM_ stpOutput $ \fp -> do
+    mats <- writeSTBFile probSeq fp
+    mapM_ (uncurry writeSTPFile) mats
 
 maybeOption nilval option settings = (\v -> if v == nilval then Nothing else Just v) <$> option settings
 
@@ -73,3 +81,8 @@ cliParser = Options
               <> metavar "N_SAMPLES"
               <> value 0
               <> help "Samples from the input sequence N_SAMPLES number of times. Prints each sample in a new line to stdout.")
+            <*> maybeOption "" strOption
+            ( long "ast-output"
+              <> metavar "AST_FILE"
+              <> value ""
+              <> help "Output file containing a simplified, standardized form of the input AST. If the input was a matrix, the matrix is wrapped in a \"matrix\" constructor.")
