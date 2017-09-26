@@ -10,6 +10,8 @@ import System.IO
 import System.Exit
 import Options.Applicative
 import Data.Semigroup ((<>))
+import Data.List
+import qualified Data.Vector as V
 
 data Channel = File FilePath
              | Std
@@ -30,17 +32,6 @@ withChannel c d f = do
   r <- f handle
   hClose handle
   return r
-
-{-
-data Options = Options {
-    inputFile :: Channel
-  , stOutput :: Maybe FilePath
-  , stpOutput :: Maybe FilePath
-  , sampling :: Maybe Int
-  , stbOutput :: Maybe FilePath
-  , printAST :: Bool
-  }
--}
 
 data Options = Options {
     input :: Channel
@@ -82,7 +73,7 @@ runOptions (Options {..}) = do
 
   forM_ sampling $ \n -> replicateM_ n $ do
     (states, _) <- randToIO $ sampleSeq vecDist matSeq
-    print states
+    putStrLn . intercalate ", " . V.toList $ states
 
   when printAST $ putAST probSeq
 

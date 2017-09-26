@@ -155,6 +155,12 @@ spec = TinyLangSpec
         }
       , TinyLangConstructor
         {
+          sym = "geometric-repeat"
+        , constructor = SimpleFloat (\p -> Composer (C0 . geometricRepeat (toRational p)))
+        , constructorDescription = ["Repeat the sequence a number of times with corresponding probability, indexed from 0"]
+        }
+      , TinyLangConstructor
+        {
           sym = "read-file"
         , constructor = SimpleString (\fp -> Monadic (C0 <$> readSeqFile (unpack fp)))
         , constructorDescription = ["Read a .st, .stp, or .stb file as a sequence"]
