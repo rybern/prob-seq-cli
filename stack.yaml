@@ -1,10 +1,10 @@
-resolver: lts-8.20
+resolver: lts-9.12
 
 packages:
 - '.'
 - location:
     git: https://github.com/rybern/prob-seq.git
-    commit: 05f983990454ec4f1463c1725e3cdbc888056809
+    commit: 187b848bbbfded1b1d7fd421e448d3344dd7360e
   extra-dep: true
 #- '../prob-seq'
 - location:
@@ -19,3 +19,6 @@ extra-deps: [ sparse-lin-alg-0.4.3
 flags: {}
 
 extra-package-dbs: []
+
+nix:
+  packages: [pkgconfig, cairo, zlib, gmp, ncurses, gcc]

@@ -6,13 +6,14 @@ module ReadConstructionFiles
   , runBuilderHandle
   ) where
 
-import Data.Text hiding (concat, map, zip)
+import Data.Text hiding (intercalate, concat, map, zip)
 import Data.Text as Text (unlines)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import qualified Math.LinearAlgebra.Sparse as M
 import qualified Data.Vector as V
+import Data.List
 import System.FilePath.Posix
 import System.Exit
 import System.IO.Error
@@ -52,6 +53,9 @@ runBuilderLines txt =
     Right v -> eitherT (die . show) (return . buildMatSeq) v
 -}
 
+collapseString :: V.Vector String -> String
+collapseString strs = "(" ++ intercalate "," (V.toList strs) ++ ")"
+
 spec :: TinyLangSpec IO (ProbSeq String)
 spec = TinyLangSpec
   {
@@ -69,7 +73,7 @@ spec = TinyLangSpec
       , TinyLangConstructor
         {
           sym = "collapse"
-        , constructor = SimpleInt (\n -> Composer (C0 . collapse undefined undefined (fromIntegral n)))
+        , constructor = SimpleInt (\n -> Composer (C0 . collapse undefined collapseString (fromIntegral n)))
         , constructorDescription = [ "Collapse each sliding window of n states into a single state"]
         }
         , TinyLangConstructor
@@ -125,15 +129,21 @@ spec = TinyLangSpec
                                                                     (map toRational ps))))
         , constructorDescription = ["Do any of a list of sequences, with corresponding probability"]
         }
-      --, TinyLangConstructor
-        --{
-          --sym = "skipdist"
-        --, constructor = SimpleListOfFloat (\ps ->
-                                             --Composer (\seq ->
-                                                         --C0 . Fix $ SkipDist (map toRational ps) seq))
-        --, constructorDescription = ["Each step of the result is the equivalent of some number of steps of the arguments,"
-                                   --, "with the number of steps drawn from the step distribution"]
-        --}
+      , TinyLangConstructor
+        {
+          sym = "skip"
+        , constructor = SimpleInt (\s -> C0 $ skip (fromInteger s))
+        , constructorDescription = ["Represent the process of 'skipping' the n states that come after this one."]
+        }
+      , TinyLangConstructor
+        {
+          sym = "skip-dist"
+        , constructor = SimpleListOfFloat (\ps ->
+                                             Composer (\seq ->
+                                                         C0 $ skipDist (map toRational ps) seq))
+        , constructorDescription = ["Each step of the result is the equivalent of some number of steps of the arguments,"
+                                   , "with the number of steps drawn from the step distribution"]
+        }
       , TinyLangConstructor
         {
           sym = "repeat"

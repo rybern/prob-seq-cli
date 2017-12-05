@@ -63,7 +63,7 @@ buildSTBLines :: (Monad m)
               -> Constructor String (Vector Text)
               -> m (Vector Text)
 buildSTBLines _ _ EmptySequence = return ["empty"]
-buildSTBLines _ _ (State str) = return ["state " <> Text.pack str]
+buildSTBLines _ _ (State str) = return ["state \"" <> Text.pack str <> "\""]
 buildSTBLines _ _ (Skip i) = return ["skip " <> tshow i]
 buildSTBLines next _ (MatrixForm m) = next m >>= \fp -> return ["fromFile " <> Text.pack fp]
 buildSTBLines _ indent (EitherOr p s1 s2) = return $ ("either " <> tshow (fromRational p))
@@ -95,3 +95,6 @@ buildSTBLines _ indent (UniformDistRepeat i s) = return $
                                           `V.cons` indent s
 buildSTBLines _ indent (Series ss) = return $ "series" `V.cons` mconcat (map indent ss)
 buildSTBLines _ indent (Repeat i s) = return $ ("repeat " <> tshow i) `V.cons` indent s
+buildSTBLines _ indent (SkipDist ps s) = return $ ("skip-dist [" <>
+                                           Text.intercalate ", " (map (tshow . fromRational) ps) <> "] ")
+                                         `V.cons` indent s

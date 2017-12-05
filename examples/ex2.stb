@@ -1,4 +1,8 @@
-first = read-file "ex1.stb"
-next = reverse first
+first = series [(state "a"), (state "b")]
+second = uniform-dist-over [first, (state "b")]
+third = series [first, second, (then empty (either 0.3 (state "b") (state "d")))]
 
-then first next
+fourth = reverse first
+fifth = finite-dist-over [0.5,0.1,0.3,0.1] [first, second, third, (empty)]
+
+then fifth second
